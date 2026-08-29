@@ -1,0 +1,42 @@
+import type { Employee } from '../../features/employees/types'
+
+export const mockEmployees: Employee[] = [
+  {
+    id: '532',
+    name: 'Gauri Kotwal',
+    avatar: 'ehfbwerywrgu',
+    emailId: 'arungovil@yopmail.com',
+    mobile: '8785456879',
+    country: 'Ecuador',
+    state: 'Maharashtra',
+    district: 'Pune',
+    email: 'gaurikotwal@yopmail.com',
+    countryId: '17',
+    department: 'IT',
+    createdAt: '2026-08-27T20:53:17.113Z',
+  },
+  {
+    id: '534',
+    name: 'Radhika',
+    avatar: 'https://avatars.githubusercontent.com/u/45251999',
+    emailId: 'Imani32@gmail.com',
+    mobile: '8978979878',
+    country: 'Peru',
+    state: 'EWSE',
+    district: 'SDSFGSD',
+    email: 'radhika@yopmail.com',
+    countryId: '2',
+    createdAt: '2026-08-27T12:24:22.122Z',
+  },
+  {
+    id: '563',
+    name: 'Clint Osinski',
+    avatar: 'https://cdn.jsdelivr.net/gh/faker-js/assets-person-portrait/male/512/4.jpg',
+    emailId: 'Karlie.Schimmel@yahoo.com',
+    mobile: 'Invalid faker method - phone.phoneNumberFormat',
+    country: "Cote d'Ivoire",
+    state: 'Michigan',
+    district: 'South Adrian',
+    createdAt: '2026-08-28T15:35:29.857Z',
+  },
+]
