@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { useState, type MouseEvent } from 'react'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import Avatar from '@mui/material/Avatar'
@@ -7,7 +7,6 @@ import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardActions from '@mui/material/CardActions'
 import CardContent from '@mui/material/CardContent'
-import Collapse from '@mui/material/Collapse'
 import IconButton from '@mui/material/IconButton'
 import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
@@ -22,6 +21,8 @@ import type { Employee } from '../types'
 
 interface EmployeeListProps {
   employees: Employee[]
+  onEdit: (employee: Employee) => void
+  onDelete: (employee: Employee) => void
 }
 
 interface EmployeeField {
@@ -33,7 +34,6 @@ const SUMMARY_FIELDS: EmployeeField[] = [
   { key: 'id', label: 'ID' },
   { key: 'name', label: 'Name' },
   { key: 'email', label: 'Email' },
-  { key: 'emailId', label: 'Email ID' },
   { key: 'mobile', label: 'Mobile' },
   { key: 'department', label: 'Department' },
 ]
@@ -46,6 +46,8 @@ const DETAIL_FIELDS: EmployeeField[] = [
 ]
 
 const TABLE_COLUMN_COUNT = SUMMARY_FIELDS.length + 2
+
+const COLUMN_WIDTHS = ['64px', '88px', '16%', '22%', '14%', '12%', '180px']
 
 const tableBorder = {
   border: '1px solid',
@@ -85,7 +87,7 @@ function formatField(value: string | undefined, preserveCase = false) {
 }
 
 function getFieldValue(employee: Employee, key: keyof Employee) {
-  const preserveCase = key === 'email' || key === 'emailId'
+  const preserveCase = key === 'email'
   return formatField(employee[key], preserveCase)
 }
 
@@ -108,70 +110,80 @@ function EmployeeAvatar({ employee }: { employee: Employee }) {
   )
 }
 
-function LocationDetails({ employee }: { employee: Employee }) {
-  const displayName = formatField(employee.name)
-
-  return (
-    <Box
-      role="region"
-      aria-label={`Location details for ${displayName}`}
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-        gap: 1.5,
-        py: 1.5,
-        px: { xs: 0, sm: 1 },
-      }}
-    >
-      {DETAIL_FIELDS.map((field) => (
-        <Typography key={field.key} variant="body2">
-          <strong>{field.label}:</strong> {getFieldValue(employee, field.key)}
-        </Typography>
-      ))}
-    </Box>
-  )
-}
-
 function EmployeeActions({
   employee,
   isExpanded,
   onViewMore,
+  onEdit,
+  onDelete,
 }: {
   employee: Employee
   isExpanded: boolean
   onViewMore: (employeeId: string) => void
+  onEdit: (employee: Employee) => void
+  onDelete: (employee: Employee) => void
 }) {
   const displayName = formatField(employee.name)
 
+  function stopRowToggle(event: MouseEvent<HTMLElement>) {
+    event.stopPropagation()
+  }
+
   return (
-    <>
+    <Box
+      component="span"
+      onClick={stopRowToggle}
+      onMouseDown={stopRowToggle}
+      sx={{ display: 'inline-flex', alignItems: 'center' }}
+    >
       <Button
         size="small"
         onClick={() => onViewMore(employee.id)}
-        aria-label={`View more for ${displayName}`}
+        aria-label={`${isExpanded ? 'View less' : 'View more'} for ${displayName}`}
         aria-expanded={isExpanded}
       >
         {isExpanded ? 'View less' : 'View more'}
       </Button>
-      <IconButton aria-label={`Edit ${displayName}`} size="small">
+      <IconButton
+        aria-label={`Edit ${displayName}`}
+        size="small"
+        onClick={() => onEdit(employee)}
+      >
         <EditOutlinedIcon fontSize="small" />
       </IconButton>
-      <IconButton aria-label={`Delete ${displayName}`} size="small" color="error">
+      <IconButton
+        aria-label={`Delete ${displayName}`}
+        size="small"
+        color="error"
+        onClick={() => onDelete(employee)}
+      >
         <DeleteOutlineIcon fontSize="small" />
       </IconButton>
-    </>
+    </Box>
   )
 }
 
-export function EmployeeList({ employees }: EmployeeListProps) {
+export function EmployeeList({
+  employees,
+  onEdit,
+  onDelete,
+}: EmployeeListProps) {
   const [expandedEmployeeId, setExpandedEmployeeId] = useState<string | null>(
     null,
   )
 
-  function handleViewMore(employeeId: string) {
+  function handleToggleDetails(employeeId: string) {
     setExpandedEmployeeId((currentId) =>
       currentId === employeeId ? null : employeeId,
     )
+  }
+
+  function handleRowClick(event: MouseEvent<HTMLElement>, employeeId: string) {
+    if ((event.target as HTMLElement).closest('button')) {
+      return
+    }
+
+    handleToggleDetails(employeeId)
   }
 
   return (
@@ -190,11 +202,15 @@ export function EmployeeList({ employees }: EmployeeListProps) {
           aria-label="Employees"
           size="small"
           sx={{
+            tableLayout: 'fixed',
+            width: '100%',
             borderCollapse: 'collapse',
             '& .employee-data-row .MuiTableCell-root': {
               px: 1,
               py: 0.75,
               ...tableBorder,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
             },
             '& .MuiTableHead-root .MuiTableCell-root': {
               px: 1,
@@ -204,12 +220,18 @@ export function EmployeeList({ employees }: EmployeeListProps) {
               fontWeight: 600,
             },
             '& .employee-details-row .MuiTableCell-root': {
-              px: 1,
-              py: 0,
-              border: 'none',
+              px: 1.5,
+              py: 1,
+              ...tableBorder,
+              overflow: 'visible',
             },
           }}
         >
+          <colgroup>
+            {COLUMN_WIDTHS.map((width, index) => (
+              <col key={index} style={{ width }} />
+            ))}
+          </colgroup>
           <TableHead>
             <TableRow>
               <TableCell>Avatar</TableCell>
@@ -220,47 +242,71 @@ export function EmployeeList({ employees }: EmployeeListProps) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {employees.map((employee) => {
+            {employees.flatMap((employee) => {
               const isExpanded = expandedEmployeeId === employee.id
+              const rows = [
+                <TableRow
+                  key={employee.id}
+                  className="employee-data-row"
+                  hover
+                  onClick={(event) => handleRowClick(event, employee.id)}
+                  sx={{ cursor: 'pointer' }}
+                  aria-expanded={isExpanded}
+                >
+                  <TableCell>
+                    <EmployeeAvatar employee={employee} />
+                  </TableCell>
+                  {SUMMARY_FIELDS.map((field) => (
+                    <TableCell key={field.key} sx={{ whiteSpace: 'nowrap' }}>
+                      {getFieldValue(employee, field.key)}
+                    </TableCell>
+                  ))}
+                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                    <EmployeeActions
+                      employee={employee}
+                      isExpanded={isExpanded}
+                      onViewMore={handleToggleDetails}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                    />
+                  </TableCell>
+                </TableRow>,
+              ]
 
-              return (
-                <Fragment key={employee.id}>
-                  <TableRow className="employee-data-row" hover>
-                    <TableCell>
-                      <EmployeeAvatar employee={employee} />
-                    </TableCell>
-                    {SUMMARY_FIELDS.map((field) => (
-                      <TableCell key={field.key} sx={{ whiteSpace: 'nowrap' }}>
-                        {getFieldValue(employee, field.key)}
-                      </TableCell>
-                    ))}
-                    <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                      <EmployeeActions
-                        employee={employee}
-                        isExpanded={isExpanded}
-                        onViewMore={handleViewMore}
-                      />
-                    </TableCell>
-                  </TableRow>
+              if (isExpanded) {
+                rows.push(
                   <TableRow
+                    key={`${employee.id}-details`}
                     className="employee-details-row"
-                    sx={{ display: isExpanded ? 'table-row' : 'none' }}
                   >
                     <TableCell
                       colSpan={TABLE_COLUMN_COUNT}
-                      sx={{
-                        py: 0,
-                        borderBottom: tableBorder.border,
-                        borderColor: 'grey.300',
-                      }}
+                      role="region"
+                      aria-label={`Location details for ${formatField(employee.name)}`}
                     >
-                      <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-                        <LocationDetails employee={employee} />
-                      </Collapse>
+                      <Box
+                        sx={{
+                          display: 'grid',
+                          gridTemplateColumns: {
+                            sm: '1fr 1fr',
+                            md: 'repeat(4, minmax(0, 1fr))',
+                          },
+                          gap: 1,
+                        }}
+                      >
+                        {DETAIL_FIELDS.map((field) => (
+                          <Typography key={field.key} variant="body2">
+                            <strong>{field.label} :</strong>{' '}
+                            {getFieldValue(employee, field.key)}
+                          </Typography>
+                        ))}
+                      </Box>
                     </TableCell>
-                  </TableRow>
-                </Fragment>
-              )
+                  </TableRow>,
+                )
+              }
+
+              return rows
             })}
           </TableBody>
         </Table>
@@ -279,7 +325,8 @@ export function EmployeeList({ employees }: EmployeeListProps) {
               key={employee.id}
               component="article"
               variant="outlined"
-              sx={{ borderColor: 'grey.300' }}
+              onClick={(event) => handleRowClick(event, employee.id)}
+              sx={{ borderColor: 'grey.300', cursor: 'pointer' }}
             >
               <CardContent>
                 <Box
@@ -293,20 +340,27 @@ export function EmployeeList({ employees }: EmployeeListProps) {
                 <Box sx={{ display: 'grid', gap: 0.75 }}>
                   {SUMMARY_FIELDS.map((field) => (
                     <Typography key={field.key} variant="body2">
-                      <strong>{field.label}:</strong>{' '}
+                      <strong>{field.label} :</strong>{' '}
                       {getFieldValue(employee, field.key)}
                     </Typography>
                   ))}
+                  {isExpanded
+                    ? DETAIL_FIELDS.map((field) => (
+                        <Typography key={field.key} variant="body2">
+                          <strong>{field.label} :</strong>{' '}
+                          {getFieldValue(employee, field.key)}
+                        </Typography>
+                      ))
+                    : null}
                 </Box>
-                <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-                  <LocationDetails employee={employee} />
-                </Collapse>
               </CardContent>
               <CardActions sx={{ justifyContent: 'flex-end' }}>
                 <EmployeeActions
                   employee={employee}
                   isExpanded={isExpanded}
-                  onViewMore={handleViewMore}
+                  onViewMore={handleToggleDetails}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
                 />
               </CardActions>
             </Card>
