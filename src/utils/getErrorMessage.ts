@@ -35,3 +35,7 @@ export function getErrorMessage(
 
   return fallback
 }
+
+export function isNotFoundError(error: ApiError): boolean {
+  return Boolean(error && 'status' in error && error.status === 404)
+}

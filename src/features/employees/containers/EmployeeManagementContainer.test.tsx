@@ -1,7 +1,8 @@
 import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { delay, http, HttpResponse } from 'msw'
 import { renderWithProviders } from '../../../test/renderWithProviders'
-import { employeesPath } from '../../../test/handlers'
+import { employeeByIdPath, employeesPath } from '../../../test/handlers'
 import { server } from '../../../test/server'
 import { EmployeeManagementContainer } from './EmployeeManagementContainer'
 
@@ -57,5 +58,54 @@ describe('EmployeeManagementContainer listing', () => {
     expect(await screen.findByRole('alert')).toBeInTheDocument()
     expect(screen.getByText(/unable to load employees/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
+  })
+})
+
+describe('EmployeeManagementContainer search', () => {
+  it('shows the employee returned by ID search', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<EmployeeManagementContainer />)
+
+    await screen.findAllByText('Gauri Kotwal')
+    await user.type(screen.getByLabelText(/search by employee id/i), '532')
+    await user.click(screen.getByRole('button', { name: /^search$/i }))
+
+    expect(await screen.findAllByText('Gauri Kotwal')).not.toHaveLength(0)
+    expect(screen.queryByText('Radhika')).not.toBeInTheDocument()
+  })
+
+  it('shows employee not found when the ID does not exist', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<EmployeeManagementContainer />)
+
+    await screen.findAllByText('Gauri Kotwal')
+    await user.type(screen.getByLabelText(/search by employee id/i), '999')
+    await user.click(screen.getByRole('button', { name: /^search$/i }))
+
+    expect(await screen.findByText(/employee not found/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/no employee exists with that id/i),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Gauri Kotwal')).not.toBeInTheDocument()
+  })
+
+  it('shows an error when employee search fails', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.get(employeeByIdPath, () =>
+        HttpResponse.json({ message: 'Server error' }, { status: 500 }),
+      ),
+    )
+
+    renderWithProviders(<EmployeeManagementContainer />)
+
+    await screen.findAllByText('Gauri Kotwal')
+    await user.type(screen.getByLabelText(/search by employee id/i), '532')
+    await user.click(screen.getByRole('button', { name: /^search$/i }))
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+    expect(
+      screen.getByText(/unable to search for that employee/i),
+    ).toBeInTheDocument()
   })
 })

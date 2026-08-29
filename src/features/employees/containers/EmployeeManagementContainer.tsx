@@ -1,21 +1,47 @@
-import { useMemo } from 'react'
+import { useState } from 'react'
 import { EmptyState } from '../../../components/common/EmptyState'
 import { ErrorState } from '../../../components/common/ErrorState'
 import { LoadingState } from '../../../components/common/LoadingState'
 import { PageHeader } from '../../../components/common/PageHeader'
-import { getErrorMessage } from '../../../utils/getErrorMessage'
-import { useGetEmployeesQuery } from '../api/employeeApi'
+import { getErrorMessage, isNotFoundError } from '../../../utils/getErrorMessage'
+import {
+  useGetEmployeesQuery,
+  useLazyGetEmployeeByIdQuery,
+} from '../api/employeeApi'
 import { EmployeeList } from '../components/EmployeeList'
-import { fillMissingEmployeeList } from '../utils/fillMissingEmployeeFields'
+import { EmployeeSearch } from '../components/EmployeeSearch'
+import { fillMissingEmployeeFields, fillMissingEmployeeList } from '../utils/fillMissingEmployeeFields'
 
 export function EmployeeManagementContainer() {
   const { data, error, isError, isLoading, refetch } = useGetEmployeesQuery()
-  const employees = useMemo(
-    () => (data ? fillMissingEmployeeList(data) : data),
-    [data],
-  )
+  const [
+    searchEmployeeById,
+    {
+      data: searchedEmployee,
+      error: searchError,
+      isError: isSearchError,
+      isFetching: isSearching,
+      reset: resetSearch,
+    },
+  ] = useLazyGetEmployeeByIdQuery()
+  const [hasSearched, setHasSearched] = useState(false)
 
-  let content = (
+  const employees = data ? fillMissingEmployeeList(data) : data
+  const searchResult = searchedEmployee
+    ? fillMissingEmployeeFields(searchedEmployee)
+    : undefined
+
+  function handleSearch(employeeId: string) {
+    setHasSearched(true)
+    void searchEmployeeById(employeeId)
+  }
+
+  function handleClearSearch() {
+    setHasSearched(false)
+    resetSearch()
+  }
+
+  let listContent = (
     <EmptyState
       title="No employees found"
       description="There are no employees to display yet."
@@ -23,9 +49,9 @@ export function EmployeeManagementContainer() {
   )
 
   if (isLoading) {
-    content = <LoadingState label="Loading employees..." />
+    listContent = <LoadingState label="Loading employees..." />
   } else if (isError) {
-    content = (
+    listContent = (
       <ErrorState
         message={getErrorMessage(error, 'Unable to load employees.')}
         onRetry={() => {
@@ -34,7 +60,30 @@ export function EmployeeManagementContainer() {
       />
     )
   } else if (employees && employees.length > 0) {
-    content = <EmployeeList employees={employees} />
+    listContent = <EmployeeList employees={employees} />
+  }
+
+  let searchContent = null
+
+  if (hasSearched && isSearching) {
+    searchContent = <LoadingState label="Searching for employee..." />
+  } else if (hasSearched && isSearchError && isNotFoundError(searchError)) {
+    searchContent = (
+      <EmptyState
+        title="Employee not found"
+        description="No employee exists with that ID."
+      />
+    )
+  } else if (hasSearched && isSearchError) {
+    searchContent = (
+      <ErrorState
+        message={getErrorMessage(searchError, 'Unable to search for that employee.')}
+      />
+    )
+  } else if (hasSearched && searchResult) {
+    searchContent = <EmployeeList employees={[searchResult]} />
+  } else if (hasSearched) {
+    searchContent = <LoadingState label="Searching for employee..." />
   }
 
   return (
@@ -43,7 +92,12 @@ export function EmployeeManagementContainer() {
         title="Employee Management"
         description="View and manage employee records."
       />
-      {content}
+      <EmployeeSearch
+        onSearch={handleSearch}
+        onClear={handleClearSearch}
+        isSearching={isSearching}
+      />
+      {hasSearched ? searchContent : listContent}
     </>
   )
 }
