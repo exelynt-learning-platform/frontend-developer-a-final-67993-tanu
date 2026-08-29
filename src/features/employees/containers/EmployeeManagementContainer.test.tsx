@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { delay, http, HttpResponse } from 'msw'
 import { renderWithProviders } from '../../../test/renderWithProviders'
@@ -107,5 +107,75 @@ describe('EmployeeManagementContainer search', () => {
     expect(
       screen.getByText(/unable to search for that employee/i),
     ).toBeInTheDocument()
+  })
+})
+
+describe('EmployeeManagementContainer CRUD', () => {
+  it('creates an employee with POST and shows it in the list', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<EmployeeManagementContainer />)
+
+    await screen.findAllByText('Gauri Kotwal')
+    await user.click(screen.getByRole('button', { name: /add employee/i }))
+
+    await user.type(screen.getByLabelText(/^name/i), 'Ada Lovelace')
+    await user.type(screen.getByLabelText(/^email/i), 'ada@example.com')
+    await user.type(screen.getByLabelText(/^mobile/i), '9876543210')
+    await user.click(screen.getByLabelText(/^country/i))
+    await user.click(await screen.findByRole('option', { name: 'India' }))
+    await user.type(screen.getByLabelText(/^state/i), 'Maharashtra')
+    await user.type(screen.getByLabelText(/^district/i), 'Pune')
+    await user.click(screen.getByRole('button', { name: /create employee/i }))
+
+    expect(await screen.findByText(/employee created/i)).toBeInTheDocument()
+    expect(await screen.findAllByText('Ada Lovelace')).not.toHaveLength(0)
+  })
+
+  it('updates an employee with PUT and refreshes the list', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<EmployeeManagementContainer />)
+
+    await screen.findAllByText('Gauri Kotwal')
+    await user.click(screen.getAllByRole('button', { name: /edit gauri kotwal/i })[0])
+
+    const nameInput = await screen.findByLabelText(/^name/i)
+    await user.clear(nameInput)
+    await user.type(nameInput, 'Gauri Updated')
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    expect(await screen.findByText(/employee updated/i)).toBeInTheDocument()
+    expect(await screen.findAllByText('Gauri Updated')).not.toHaveLength(0)
+  })
+
+  it('does not delete until the confirmation dialog is accepted', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<EmployeeManagementContainer />)
+
+    await screen.findAllByText('Gauri Kotwal')
+    await user.click(
+      screen.getAllByRole('button', { name: /delete gauri kotwal/i })[0],
+    )
+
+    expect(await screen.findByText(/delete employee\?/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /cancel/i }))
+
+    await waitFor(() => {
+      expect(screen.queryByText(/delete employee\?/i)).not.toBeInTheDocument()
+    })
+    expect(screen.getAllByText('Gauri Kotwal').length).toBeGreaterThan(0)
+  })
+
+  it('deletes an employee with DELETE after confirmation', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<EmployeeManagementContainer />)
+
+    await screen.findAllByText('Gauri Kotwal')
+    await user.click(
+      screen.getAllByRole('button', { name: /delete gauri kotwal/i })[0],
+    )
+    await user.click(await screen.findByRole('button', { name: /^delete$/i }))
+
+    expect(await screen.findByText(/employee deleted/i)).toBeInTheDocument()
+    expect(screen.queryByText('Gauri Kotwal')).not.toBeInTheDocument()
   })
 })

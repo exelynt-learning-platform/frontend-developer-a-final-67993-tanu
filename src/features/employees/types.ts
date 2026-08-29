@@ -21,4 +21,7 @@ export interface EmployeeWritePayload {
   state: string
   district: string
   countryId?: string
+  department?: string
+  emailId?: string
+  avatar?: string
 }

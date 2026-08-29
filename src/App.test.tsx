@@ -10,7 +10,7 @@ describe('App shell', () => {
       await screen.findByRole('heading', { name: /employee management/i }),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: /add employee/i }),
-    ).not.toBeInTheDocument()
+      screen.getByRole('button', { name: /add employee/i }),
+    ).toBeInTheDocument()
   })
 })

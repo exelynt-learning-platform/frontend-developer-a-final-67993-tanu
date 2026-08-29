@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom/vitest'
+import { resetMockEmployees } from './handlers'
 import { server } from './server'
 
 beforeAll(() => {
@@ -7,6 +8,7 @@ beforeAll(() => {
 
 afterEach(() => {
   server.resetHandlers()
+  resetMockEmployees()
 })
 
 afterAll(() => {
