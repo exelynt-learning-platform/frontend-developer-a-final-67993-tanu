@@ -1,17 +1,16 @@
-import { render, screen } from '@testing-library/react'
-import { AppProviders } from './app/providers'
+import { screen } from '@testing-library/react'
 import App from './App'
+import { renderWithProviders } from './test/renderWithProviders'
 
 describe('App shell', () => {
-  it('renders the employee management heading', () => {
-    render(
-      <AppProviders>
-        <App />
-      </AppProviders>,
-    )
+  it('renders the employee management heading', async () => {
+    renderWithProviders(<App />)
 
     expect(
-      screen.getByRole('heading', { name: /employee management/i }),
+      await screen.findByRole('heading', { name: /employee management/i }),
     ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /add employee/i }),
+    ).not.toBeInTheDocument()
   })
 })
