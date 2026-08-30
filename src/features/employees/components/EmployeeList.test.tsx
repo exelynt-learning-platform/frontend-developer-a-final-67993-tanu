@@ -4,7 +4,7 @@ import { EmployeeList } from './EmployeeList'
 import { mockEmployees } from '../../../test/fixtures/employees'
 
 describe('EmployeeList', () => {
-  it('renders summary fields and hides location details until a row is clicked', async () => {
+  it('renders summary fields and hides extra details until View more is used', async () => {
     const user = userEvent.setup()
     render(
       <EmployeeList
@@ -22,21 +22,22 @@ describe('EmployeeList', () => {
     expect(screen.queryByText('Email ID')).not.toBeInTheDocument()
     expect(screen.queryByText('arungovil@yopmail.com')).not.toBeInTheDocument()
     expect(screen.getAllByText('8785456879').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('IT').length).toBeGreaterThan(0)
-    expect(screen.queryByText('Ecuador')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Ecuador').length).toBeGreaterThan(0)
     expect(screen.queryByText('Maharashtra')).not.toBeInTheDocument()
     expect(screen.queryByText('Pune')).not.toBeInTheDocument()
 
-    await user.click(screen.getAllByText('Gauri Kotwal')[0])
+    await user.click(
+      screen.getAllByRole('button', { name: /view more for gauri kotwal/i })[0],
+    )
 
     const details = await screen.findAllByRole('region', {
       name: /location details for gauri kotwal/i,
     })
 
-    expect(details[0]).toHaveTextContent('Country : Ecuador')
     expect(details[0]).toHaveTextContent('Country ID : 17')
     expect(details[0]).toHaveTextContent('State : Maharashtra')
     expect(details[0]).toHaveTextContent('District : Pune')
+    expect(details[0]).toHaveTextContent('Department : IT')
   })
 
   it('keeps View more on the clicked employee instead of the next row', async () => {
@@ -85,12 +86,35 @@ describe('EmployeeList', () => {
     )
 
     expect(
-      await screen.findByRole('region', {
+      (await screen.findAllByRole('region', {
         name: /location details for gauri kotwal/i,
-      }),
-    ).toBeInTheDocument()
+      })).length,
+    ).toBeGreaterThan(0)
     expect(onEdit).not.toHaveBeenCalled()
     expect(onDelete).not.toHaveBeenCalled()
+  })
+
+  it('expands details when View more is activated with the keyboard', async () => {
+    const user = userEvent.setup()
+    render(
+      <EmployeeList
+        employees={mockEmployees}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    )
+
+    const viewMore = screen.getAllByRole('button', {
+      name: /view more for gauri kotwal/i,
+    })[0]
+    viewMore.focus()
+    await user.keyboard('{Enter}')
+
+    expect(
+      (await screen.findAllByRole('region', {
+        name: /location details for gauri kotwal/i,
+      })).length,
+    ).toBeGreaterThan(0)
   })
 
   it('calls onEdit and onDelete for the selected employee', async () => {
