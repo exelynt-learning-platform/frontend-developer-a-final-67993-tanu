@@ -35,19 +35,19 @@ const SUMMARY_FIELDS: EmployeeField[] = [
   { key: 'name', label: 'Name' },
   { key: 'email', label: 'Email' },
   { key: 'mobile', label: 'Mobile' },
-  { key: 'department', label: 'Department' },
+  { key: 'country', label: 'Country' },
 ]
 
 const DETAIL_FIELDS: EmployeeField[] = [
-  { key: 'country', label: 'Country' },
   { key: 'countryId', label: 'Country ID' },
   { key: 'state', label: 'State' },
   { key: 'district', label: 'District' },
+  { key: 'department', label: 'Department' },
 ]
 
 const TABLE_COLUMN_COUNT = SUMMARY_FIELDS.length + 2
 
-const COLUMN_WIDTHS = ['64px', '88px', '16%', '22%', '14%', '12%', '180px']
+const COLUMN_WIDTHS = ['64px', '80px', '16%', '22%', '14%', '14%', '180px']
 
 const tableBorder = {
   border: '1px solid',
@@ -137,6 +137,7 @@ function EmployeeActions({
       sx={{ display: 'inline-flex', alignItems: 'center' }}
     >
       <Button
+        type="button"
         size="small"
         onClick={() => onViewMore(employee.id)}
         aria-label={`${isExpanded ? 'View less' : 'View more'} for ${displayName}`}
@@ -251,7 +252,6 @@ export function EmployeeList({
                   hover
                   onClick={(event) => handleRowClick(event, employee.id)}
                   sx={{ cursor: 'pointer' }}
-                  aria-expanded={isExpanded}
                 >
                   <TableCell>
                     <EmployeeAvatar employee={employee} />
@@ -344,14 +344,19 @@ export function EmployeeList({
                       {getFieldValue(employee, field.key)}
                     </Typography>
                   ))}
-                  {isExpanded
-                    ? DETAIL_FIELDS.map((field) => (
+                  {isExpanded ? (
+                    <Box
+                      role="region"
+                      aria-label={`Location details for ${formatField(employee.name)}`}
+                    >
+                      {DETAIL_FIELDS.map((field) => (
                         <Typography key={field.key} variant="body2">
                           <strong>{field.label} :</strong>{' '}
                           {getFieldValue(employee, field.key)}
                         </Typography>
-                      ))
-                    : null}
+                      ))}
+                    </Box>
+                  ) : null}
                 </Box>
               </CardContent>
               <CardActions sx={{ justifyContent: 'flex-end' }}>

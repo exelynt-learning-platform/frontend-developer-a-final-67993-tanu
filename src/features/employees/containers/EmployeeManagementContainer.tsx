@@ -34,10 +34,6 @@ import type { EmployeeFormValues } from '../../../schemas/employeeSchema'
 import type { Employee } from '../types'
 import { findCountryId, getCountryOptions } from '../utils/countryOptions'
 import { toEmployeeWritePayload } from '../utils/employeeForm'
-import {
-  fillMissingEmployeeFields,
-  fillMissingEmployeeList,
-} from '../utils/fillMissingEmployeeFields'
 
 export function EmployeeManagementContainer() {
   const dispatch = useAppDispatch()
@@ -45,14 +41,16 @@ export function EmployeeManagementContainer() {
   const selectedEmployee = useAppSelector(selectSelectedEmployee)
   const feedbackMessage = useAppSelector(selectFeedbackMessage)
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null)
+  const isFormOpen = formMode !== 'closed'
 
-  const { data, error, isError, isLoading, refetch } = useGetEmployeesQuery()
+  const { data: employees, error, isError, isLoading, refetch } =
+    useGetEmployeesQuery()
   const {
     data: countries = [],
     error: countriesError,
     isError: isCountriesError,
     isLoading: isCountriesLoading,
-  } = useGetCountriesQuery()
+  } = useGetCountriesQuery(undefined, { skip: !isFormOpen })
   const [
     searchEmployeeById,
     {
@@ -67,11 +65,7 @@ export function EmployeeManagementContainer() {
   const [updateEmployee, updateState] = useUpdateEmployeeMutation()
   const [deleteEmployee, deleteState] = useDeleteEmployeeMutation()
   const [hasSearched, setHasSearched] = useState(false)
-
-  const employees = data ? fillMissingEmployeeList(data) : data
   const searchResult = searchedEmployee
-    ? fillMissingEmployeeFields(searchedEmployee)
-    : undefined
 
   function handleSearch(employeeId: string) {
     setHasSearched(true)
@@ -231,7 +225,7 @@ export function EmployeeManagementContainer() {
       />
       {hasSearched ? searchContent : listContent}
       <EmployeeForm
-        open={formMode !== 'closed'}
+        open={isFormOpen}
         mode={formMode === 'edit' ? 'edit' : 'create'}
         employee={selectedEmployee}
         countries={countries}

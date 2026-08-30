@@ -31,6 +31,7 @@ export function DeleteEmployeeDialog({
       open={open}
       onClose={isDeleting ? undefined : onCancel}
       aria-labelledby="delete-employee-title"
+      aria-describedby="delete-employee-description"
     >
       <DialogTitle id="delete-employee-title">Delete employee?</DialogTitle>
       <DialogContent>
@@ -39,17 +40,18 @@ export function DeleteEmployeeDialog({
             {error}
           </Alert>
         ) : null}
-        <DialogContentText>
+        <DialogContentText id="delete-employee-description">
           This will permanently remove {name}
           {employee?.id ? ` (ID ${employee.id})` : ''}. This action cannot be
           undone.
         </DialogContentText>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onCancel} disabled={isDeleting}>
+        <Button type="button" onClick={onCancel} disabled={isDeleting}>
           Cancel
         </Button>
         <Button
+          type="button"
           color="error"
           variant="contained"
           onClick={onConfirm}

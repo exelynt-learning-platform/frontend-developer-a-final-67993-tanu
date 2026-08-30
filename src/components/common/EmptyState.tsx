@@ -8,7 +8,11 @@ interface EmptyStateProps {
 
 export function EmptyState({ title, description }: EmptyStateProps) {
   return (
-    <Box sx={{ textAlign: 'center', py: 6, px: 2 }}>
+    <Box
+      role="status"
+      aria-live="polite"
+      sx={{ textAlign: 'center', py: 6, px: 2 }}
+    >
       <Typography variant="h6" component="p" gutterBottom>
         {title}
       </Typography>
