@@ -142,4 +142,29 @@ describe('EmployeeList', () => {
       expect.objectContaining({ id: '532', name: 'Gauri Kotwal' }),
     )
   })
+
+  it('opens a larger photo preview when an avatar is clicked', async () => {
+    const user = userEvent.setup()
+    render(
+      <EmployeeList
+        employees={mockEmployees}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    )
+
+    await user.click(
+      screen.getAllByRole('button', { name: /view photo of radhika/i })[0],
+    )
+
+    const dialog = await screen.findByRole('dialog', { name: /photo of radhika/i })
+    expect(dialog).toBeInTheDocument()
+    expect(dialog.querySelector('img')).toHaveAttribute(
+      'src',
+      'https://avatars.githubusercontent.com/u/45251999',
+    )
+    expect(
+      screen.queryByRole('region', { name: /location details for radhika/i }),
+    ).not.toBeInTheDocument()
+  })
 })

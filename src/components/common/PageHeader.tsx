@@ -19,12 +19,23 @@ export function PageHeader({ title, description, action }: PageHeaderProps) {
         justifyContent: 'space-between',
         gap: 2,
         mb: 3,
+        pb: 2.5,
+        borderBottom: '1px solid',
+        borderColor: 'divider',
       }}
     >
       <Box>
-        <Typography variant="h1">{title}</Typography>
+        <Typography
+          variant="h1"
+          sx={{
+            color: 'text.primary',
+            letterSpacing: '0.06em',
+          }}
+        >
+          {title}
+        </Typography>
         {description ? (
-          <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+          <Typography color="text.secondary" sx={{ mt: 0.75 }}>
             {description}
           </Typography>
         ) : null}

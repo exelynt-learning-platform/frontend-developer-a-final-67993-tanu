@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { EmployeeForm } from './EmployeeForm'
 import { mockCountries } from '../../../test/fixtures/countries'
@@ -114,8 +114,58 @@ describe('EmployeeForm', () => {
         country: 'India',
         state: 'Maharashtra',
         district: 'Pune',
+        avatar: '',
       },
       expect.anything(),
     )
+  })
+
+  it('includes an uploaded photo in create values', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    render(
+      <EmployeeForm {...defaultProps} mode="create" onSubmit={onSubmit} />,
+    )
+
+    const file = new File(['photo-bytes'], 'ada.png', { type: 'image/png' })
+    await user.upload(
+      screen.getByLabelText(/upload employee photo/i),
+      file,
+    )
+
+    await user.type(screen.getByLabelText(/^name/i), 'Ada Lovelace')
+    await user.type(screen.getByLabelText(/^email/i), 'ada@example.com')
+    await user.type(screen.getByLabelText(/^mobile/i), '9876543210')
+    await user.click(screen.getByLabelText(/^country/i))
+    await user.click(await screen.findByRole('option', { name: 'India' }))
+    await user.type(screen.getByLabelText(/^state/i), 'Maharashtra')
+    await user.type(screen.getByLabelText(/^district/i), 'Pune')
+    await user.click(screen.getByRole('button', { name: /create employee/i }))
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalled()
+    })
+
+    const submitted = onSubmit.mock.calls[0][0] as { avatar?: string }
+    expect(submitted.avatar).toMatch(/^data:image\/png;base64,/)
+  })
+
+  it('rejects an image that is larger than 500 KB', async () => {
+    const user = userEvent.setup()
+    render(<EmployeeForm {...defaultProps} mode="create" />)
+
+    const file = new File(
+      [new Uint8Array(500 * 1024 + 1)],
+      'large.png',
+      { type: 'image/png' },
+    )
+    await user.upload(
+      screen.getByLabelText(/upload employee photo/i),
+      file,
+    )
+
+    expect(
+      await screen.findByText(/this image is too large/i),
+    ).toBeInTheDocument()
   })
 })

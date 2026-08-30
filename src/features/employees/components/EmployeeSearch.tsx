@@ -42,6 +42,10 @@ export function EmployeeSearch({
         alignItems: { xs: 'stretch', sm: 'center' },
         gap: 1.5,
         mb: 3,
+        p: { xs: 1.5, sm: 2 },
+        border: '1px solid',
+        borderColor: 'divider',
+        bgcolor: 'rgba(27, 38, 59, 0.55)',
       }}
     >
       <TextField

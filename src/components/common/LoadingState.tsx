@@ -18,6 +18,9 @@ export function LoadingState({ label = 'Loading...' }: LoadingStateProps) {
         justifyContent: 'center',
         gap: 2,
         py: 6,
+        border: '1px solid',
+        borderColor: 'divider',
+        bgcolor: 'rgba(27, 38, 59, 0.45)',
       }}
     >
       <CircularProgress aria-hidden="true" />

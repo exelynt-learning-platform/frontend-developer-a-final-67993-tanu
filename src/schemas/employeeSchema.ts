@@ -33,6 +33,7 @@ export const employeeSchema = z.object({
   country: z.string().trim().min(1, 'Country is required.'),
   state: requiredText('State', 2, 50),
   district: requiredText('District', 2, 50),
+  avatar: z.string().optional(),
 })
 
 export type EmployeeFormValues = z.infer<typeof employeeSchema>

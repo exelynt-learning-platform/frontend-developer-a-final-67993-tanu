@@ -11,7 +11,14 @@ export function EmptyState({ title, description }: EmptyStateProps) {
     <Box
       role="status"
       aria-live="polite"
-      sx={{ textAlign: 'center', py: 6, px: 2 }}
+      sx={{
+        textAlign: 'center',
+        py: 6,
+        px: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        bgcolor: 'rgba(27, 38, 59, 0.45)',
+      }}
     >
       <Typography variant="h6" component="p" gutterBottom>
         {title}

@@ -280,6 +280,49 @@ describe('EmployeeManagementContainer API errors', () => {
     expect(screen.queryByText(/employee updated/i)).not.toBeInTheDocument()
   })
 
+  it('shows an image-size error when the save payload is too large', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.post(employeesPath, () =>
+        HttpResponse.json({ message: 'Payload Too Large' }, { status: 413 }),
+      ),
+    )
+
+    renderWithProviders(<EmployeeManagementContainer />)
+
+    await screen.findAllByText('Gauri Kotwal')
+    await user.click(screen.getByRole('button', { name: /add employee/i }))
+    await fillCreateForm(user)
+    await user.click(screen.getByRole('button', { name: /create employee/i }))
+
+    expect(
+      await screen.findByText(/the image is too large to save/i),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /add employee/i })).toBeInTheDocument()
+    expect(screen.queryByText(/employee created/i)).not.toBeInTheDocument()
+  })
+
+  it('shows an image-size error when an update payload is too large', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.put(employeeByIdPath, () =>
+        HttpResponse.json({ message: 'Payload Too Large' }, { status: 413 }),
+      ),
+    )
+
+    renderWithProviders(<EmployeeManagementContainer />)
+
+    await screen.findAllByText('Gauri Kotwal')
+    await user.click(screen.getAllByRole('button', { name: /edit gauri kotwal/i })[0])
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    expect(
+      await screen.findByText(/the image is too large to save/i),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /edit employee/i })).toBeInTheDocument()
+    expect(screen.queryByText(/employee updated/i)).not.toBeInTheDocument()
+  })
+
   it('shows a delete error and does not report success', async () => {
     const user = userEvent.setup()
     server.use(
