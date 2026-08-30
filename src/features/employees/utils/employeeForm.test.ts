@@ -27,4 +27,21 @@ describe('employeeForm helpers', () => {
       avatar: 'ehfbwerywrgu',
     })
   })
+
+  it('sends a newly uploaded image as avatar', () => {
+    const payload = toEmployeeWritePayload(
+      {
+        name: 'Ada Lovelace',
+        email: 'ada@example.com',
+        mobile: '9876543210',
+        country: 'India',
+        state: 'Maharashtra',
+        district: 'Pune',
+        avatar: 'data:image/png;base64,abc',
+      },
+      '1',
+    )
+
+    expect(payload.avatar).toBe('data:image/png;base64,abc')
+  })
 })

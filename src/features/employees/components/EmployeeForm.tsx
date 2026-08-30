@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Alert from '@mui/material/Alert'
+import Avatar from '@mui/material/Avatar'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
@@ -10,6 +11,7 @@ import DialogTitle from '@mui/material/DialogTitle'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
 import {
   employeeSchema,
   type EmployeeFormValues,
@@ -18,6 +20,15 @@ import type { Country } from '../../countries/types'
 import type { Employee } from '../types'
 import { getCountryOptions } from '../utils/countryOptions'
 import { getEmployeeFormValues } from '../utils/employeeForm'
+import { isImageSrc } from '../utils/isImageSrc'
+
+const ACCEPTED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+]
+const MAX_IMAGE_BYTES = 500 * 1024
 
 interface EmployeeFormProps {
   open: boolean
@@ -44,6 +55,7 @@ export function EmployeeForm({
   onClose,
   onSubmit,
 }: EmployeeFormProps) {
+  const [photoError, setPhotoError] = useState<string | undefined>()
   const {
     control,
     register,
@@ -65,10 +77,46 @@ export function EmployeeForm({
     }
   }, [employee, open, reset])
 
+  function applyPhotoFile(
+    file: File | undefined,
+    onAvatarChange: (value: string) => void,
+  ) {
+    if (!file) {
+      return
+    }
+
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      setPhotoError('Choose a JPG, PNG, WEBP, or GIF image.')
+      return
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      setPhotoError('This image is too large. Choose a photo smaller than 500 KB.')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        onAvatarChange(reader.result)
+        setPhotoError(undefined)
+      }
+    }
+    reader.onerror = () => {
+      setPhotoError('Unable to read that image. Try another file.')
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function handleClose() {
+    setPhotoError(undefined)
+    onClose()
+  }
+
   return (
     <Dialog
       open={open}
-      onClose={isSubmitting ? undefined : onClose}
+      onClose={isSubmitting ? undefined : handleClose}
       fullWidth
       maxWidth="sm"
       aria-labelledby="employee-form-title"
@@ -90,6 +138,82 @@ export function EmployeeForm({
             {countriesError ? (
               <Alert severity="error">{countriesError}</Alert>
             ) : null}
+            <Controller
+              name="avatar"
+              control={control}
+              render={({ field }) => {
+                const photoPreview = isImageSrc(field.value)
+                  ? field.value
+                  : undefined
+
+                return (
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Avatar
+                src={photoPreview}
+                alt=""
+                sx={{
+                  width: 72,
+                  height: 72,
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                  border: '1px solid',
+                  borderColor: 'primary.light',
+                  fontSize: '1.75rem',
+                }}
+              >
+                {(employee?.name || '?').trim().charAt(0) || '?'}
+              </Avatar>
+              <Stack spacing={1} alignItems="flex-start">
+                <Typography variant="body2" color="text.secondary">
+                  Photo (optional)
+                </Typography>
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    component="label"
+                    variant="outlined"
+                    size="small"
+                    disabled={isSubmitting}
+                  >
+                    {photoPreview ? 'Change photo' : 'Upload photo'}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      hidden
+                      aria-label="Upload employee photo"
+                      onChange={(event) => {
+                        applyPhotoFile(event.target.files?.[0], field.onChange)
+                        event.target.value = ''
+                      }}
+                    />
+                  </Button>
+                  {photoPreview ? (
+                    <Button
+                      type="button"
+                      size="small"
+                      disabled={isSubmitting}
+                      onClick={() => {
+                        field.onChange('')
+                        setPhotoError(undefined)
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  ) : null}
+                </Stack>
+                {photoError ? (
+                  <Typography variant="caption" color="error">
+                    {photoError}
+                  </Typography>
+                ) : (
+                  <Typography variant="caption" color="text.secondary">
+                    JPG, PNG, WEBP, or GIF. Max 500 KB.
+                  </Typography>
+                )}
+              </Stack>
+            </Stack>
+                )
+              }}
+            />
             <TextField
               label="Name"
               autoComplete="name"
@@ -174,7 +298,7 @@ export function EmployeeForm({
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button type="button" onClick={onClose} disabled={isSubmitting}>
+          <Button type="button" onClick={handleClose} disabled={isSubmitting}>
             Cancel
           </Button>
           <Button

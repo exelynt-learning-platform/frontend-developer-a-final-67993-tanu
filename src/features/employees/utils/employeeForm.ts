@@ -1,5 +1,6 @@
 import type { EmployeeFormValues } from '../../../schemas/employeeSchema'
 import type { Employee, EmployeeWritePayload } from '../types'
+import { isImageSrc } from './isImageSrc'
 
 const emptyFormValues: EmployeeFormValues = {
   name: '',
@@ -8,6 +9,7 @@ const emptyFormValues: EmployeeFormValues = {
   country: '',
   state: '',
   district: '',
+  avatar: '',
 }
 
 export function getEmployeeFormValues(
@@ -18,6 +20,7 @@ export function getEmployeeFormValues(
   }
 
   const mobile = employee.mobile?.trim()
+  const avatar = employee.avatar?.trim()
 
   return {
     name: employee.name ?? '',
@@ -27,6 +30,7 @@ export function getEmployeeFormValues(
     country: employee.country ?? '',
     state: employee.state ?? '',
     district: employee.district ?? '',
+    avatar: isImageSrc(avatar) ? avatar : '',
   }
 }
 
@@ -45,6 +49,8 @@ export function toEmployeeWritePayload(
     countryId,
     department: existingEmployee?.department,
     emailId: existingEmployee?.emailId,
-    avatar: existingEmployee?.avatar,
+    avatar: isImageSrc(values.avatar)
+      ? values.avatar
+      : existingEmployee?.avatar,
   }
 }

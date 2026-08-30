@@ -7,6 +7,7 @@ import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardActions from '@mui/material/CardActions'
 import CardContent from '@mui/material/CardContent'
+import Dialog from '@mui/material/Dialog'
 import IconButton from '@mui/material/IconButton'
 import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
@@ -18,6 +19,7 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Typography from '@mui/material/Typography'
 import type { Employee } from '../types'
+import { isImageSrc } from '../utils/isImageSrc'
 
 interface EmployeeListProps {
   employees: Employee[]
@@ -51,7 +53,7 @@ const COLUMN_WIDTHS = ['64px', '80px', '16%', '22%', '14%', '14%', '180px']
 
 const tableBorder = {
   border: '1px solid',
-  borderColor: 'grey.300',
+  borderColor: 'divider',
 }
 
 function toCamelCaseDisplay(value: string) {
@@ -91,22 +93,54 @@ function getFieldValue(employee: Employee, key: keyof Employee) {
   return formatField(employee[key], preserveCase)
 }
 
-function isImageSrc(value: string | undefined) {
-  return Boolean(value && /^(https?:\/\/|data:)/i.test(value))
-}
-
-function EmployeeAvatar({ employee }: { employee: Employee }) {
+function EmployeeAvatar({
+  employee,
+  onPreview,
+}: {
+  employee: Employee
+  onPreview: (employee: Employee) => void
+}) {
   const avatar = employee.avatar?.trim()
   const imageSrc = isImageSrc(avatar) ? avatar : undefined
+  const displayName = formatField(employee.name)
+
+  function stopRowToggle(event: MouseEvent<HTMLElement>) {
+    event.stopPropagation()
+  }
 
   return (
-    <Avatar
-      src={imageSrc}
-      alt={employee.name}
-      sx={{ width: 36, height: 36 }}
+    <Box
+      component="button"
+      type="button"
+      aria-label={`View photo of ${displayName}`}
+      onClick={(event) => {
+        stopRowToggle(event)
+        onPreview(employee)
+      }}
+      onMouseDown={stopRowToggle}
+      sx={{
+        p: 0,
+        border: 0,
+        bgcolor: 'transparent',
+        cursor: 'pointer',
+        display: 'inline-flex',
+      }}
     >
-      {employee.name.trim().charAt(0) || '?'}
-    </Avatar>
+      <Avatar
+        src={imageSrc}
+        alt=""
+        sx={{
+          width: 36,
+          height: 36,
+          bgcolor: 'primary.main',
+          color: 'primary.contrastText',
+          border: '1px solid',
+          borderColor: 'primary.light',
+        }}
+      >
+        {employee.name.trim().charAt(0) || '?'}
+      </Avatar>
+    </Box>
   )
 }
 
@@ -142,6 +176,7 @@ function EmployeeActions({
         onClick={() => onViewMore(employee.id)}
         aria-label={`${isExpanded ? 'View less' : 'View more'} for ${displayName}`}
         aria-expanded={isExpanded}
+        sx={{ color: 'primary.light' }}
       >
         {isExpanded ? 'View less' : 'View more'}
       </Button>
@@ -172,6 +207,13 @@ export function EmployeeList({
   const [expandedEmployeeId, setExpandedEmployeeId] = useState<string | null>(
     null,
   )
+  const [previewEmployee, setPreviewEmployee] = useState<Employee | null>(null)
+  const previewName = previewEmployee
+    ? formatField(previewEmployee.name)
+    : ''
+  const previewSrc = isImageSrc(previewEmployee?.avatar)
+    ? previewEmployee?.avatar
+    : undefined
 
   function handleToggleDetails(employeeId: string) {
     setExpandedEmployeeId((currentId) =>
@@ -196,7 +238,7 @@ export function EmployeeList({
           display: { xs: 'none', sm: 'block' },
           overflowX: 'auto',
           ...tableBorder,
-          borderRadius: 1,
+          bgcolor: 'background.paper',
         }}
       >
         <Table
@@ -217,7 +259,8 @@ export function EmployeeList({
               px: 1,
               py: 0.75,
               ...tableBorder,
-              bgcolor: 'grey.50',
+              bgcolor: 'rgba(61, 90, 128, 0.35)',
+              color: 'text.secondary',
               fontWeight: 600,
             },
             '& .employee-details-row .MuiTableCell-root': {
@@ -254,7 +297,10 @@ export function EmployeeList({
                   sx={{ cursor: 'pointer' }}
                 >
                   <TableCell>
-                    <EmployeeAvatar employee={employee} />
+                    <EmployeeAvatar
+                      employee={employee}
+                      onPreview={setPreviewEmployee}
+                    />
                   </TableCell>
                   {SUMMARY_FIELDS.map((field) => (
                     <TableCell key={field.key} sx={{ whiteSpace: 'nowrap' }}>
@@ -326,13 +372,20 @@ export function EmployeeList({
               component="article"
               variant="outlined"
               onClick={(event) => handleRowClick(event, employee.id)}
-              sx={{ borderColor: 'grey.300', cursor: 'pointer' }}
+              sx={{
+                borderColor: 'divider',
+                cursor: 'pointer',
+                bgcolor: 'rgba(27, 38, 59, 0.72)',
+              }}
             >
               <CardContent>
                 <Box
                   sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}
                 >
-                  <EmployeeAvatar employee={employee} />
+                  <EmployeeAvatar
+                    employee={employee}
+                    onPreview={setPreviewEmployee}
+                  />
                   <Typography variant="h6" component="h2">
                     {getFieldValue(employee, 'name')}
                   </Typography>
@@ -372,6 +425,45 @@ export function EmployeeList({
           )
         })}
       </Stack>
+
+      <Dialog
+        open={Boolean(previewEmployee)}
+        onClose={() => setPreviewEmployee(null)}
+        aria-label={previewName ? `Photo of ${previewName}` : undefined}
+        slotProps={{
+          paper: {
+            'aria-label': previewName ? `Photo of ${previewName}` : undefined,
+            sx: {
+              m: 2,
+              p: 0,
+              minWidth: 0,
+              width: { xs: 240, sm: 300 },
+              height: { xs: 240, sm: 300 },
+              overflow: 'hidden',
+              borderRadius: '50%',
+              bgcolor: 'primary.main',
+              border: '1px solid',
+              borderColor: 'primary.light',
+              boxShadow: 'none',
+            },
+          },
+        }}
+      >
+        <Avatar
+          src={previewSrc}
+          alt={previewName}
+          sx={{
+            width: '100%',
+            height: '100%',
+            fontSize: '4.5rem',
+            borderRadius: '50%',
+            bgcolor: 'primary.main',
+            color: 'primary.contrastText',
+          }}
+        >
+          {previewEmployee?.name.trim().charAt(0) || '?'}
+        </Avatar>
+      </Dialog>
     </>
   )
 }
